@@ -42,17 +42,42 @@ public class ThreadedKernel extends Kernel {
     /**
      * Test this kernel. Test the <tt>KThread</tt>, <tt>Semaphore</tt>,
      * <tt>SynchList</tt>, and <tt>ElevatorBank</tt> classes. Note that the
-     * autograder never calls this method, so it is safe to put additional
-     * tests here.
+     * autograder never calls this method, so it is safe to put additional tests
+     * here.
      */
-    public void selfTest() {
-        KThread.selfTest();
-        Semaphore.selfTest();
-        SynchList.selfTest();
-        if (Machine.bank() != null) {
-            ElevatorBank.selfTest();
+    /* PingTest 클래스는 새롭게 추가한 내용임 */
+    private static class PingTest implements Runnable {
+        PingTest(int which) {
+            this.which = which;
         }
+
+        public void run() {
+            for (int i = 0; i < 3; i++) {
+                System.out.println("*** thread " + which + " looped " + i + " times");
+                KThread.currentThread().yield();
+            }
+        }
+
+        private int which;
     }
+
+    public void selfTest() {
+        KThread thread2 = new KThread(new PingTest(2)).setName("forked 1");
+        KThread thread3 = new KThread(new PingTest(3)).setName("forked 2");
+        KThread thread4 = new KThread(new PingTest(4)).setName("forked 3");
+
+        boolean status = Machine.interrupt().disable();
+        scheduler.setPriority(thread2, 2);
+        scheduler.setPriority(thread3, 3);
+        scheduler.setPriority(thread4, 2);
+        thread4.fork();
+        thread3.fork();
+        thread2.fork();
+        Machine.interrupt().restore(status);
+
+        new PingTest(1).run();
+    }
+
 
     /**
      * A threaded kernel does not run user programs, so this method does

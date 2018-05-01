@@ -2,9 +2,8 @@ package nachos.threads;
 
 import nachos.machine.*;
 
-import java.util.TreeSet;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.LinkedList;
 
 /**
  * A scheduler that chooses threads based on their priorities.
@@ -13,14 +12,14 @@ import java.util.Iterator;
  * A priority scheduler associates a priority with each thread. The next thread
  * to be dequeued is always a thread with priority no less than any other
  * waiting thread's priority. Like a round-robin scheduler, the thread that is
- * dequeued is, among all the threads of the same (highest) priority, the
- * thread that has been waiting longest.
+ * dequeued is, among all the threads of the same (highest) priority, the thread
+ * that has been waiting longest.
  * <p>
  * <p>
  * Essentially, a priority scheduler gives access in a round-robin fassion to
- * all the highest-priority threads, and ignores all other threads. This has
- * the potential to
- * starve a thread if there's always a thread waiting with higher priority.
+ * all the highest-priority threads, and ignores all other threads. This has the
+ * potential to starve a thread if there's always a thread waiting with higher
+ * priority.
  * <p>
  * <p>
  * A priority scheduler must partially solve the priority inversion problem; in
@@ -36,9 +35,8 @@ public class PriorityScheduler extends Scheduler {
     /**
      * Allocate a new priority thread queue.
      *
-     * @param transferPriority <tt>true</tt> if this queue should
-     *                         transfer priority from waiting threads
-     *                         to the owning thread.
+     * @param transferPriority <tt>true</tt> if this queue should transfer priority from
+     *                         waiting threads to the owning thread.
      * @return a new priority thread queue.
      */
     public ThreadQueue newThreadQueue(boolean transferPriority) {
@@ -60,8 +58,7 @@ public class PriorityScheduler extends Scheduler {
     public void setPriority(KThread thread, int priority) {
         Lib.assertTrue(Machine.interrupt().disabled());
 
-        Lib.assertTrue(priority >= priorityMinimum &&
-                priority <= priorityMaximum);
+        Lib.assertTrue(priority >= priorityMinimum && priority <= priorityMaximum);
 
         getThreadState(thread).setPriority(priority);
     }
@@ -142,38 +139,61 @@ public class PriorityScheduler extends Scheduler {
 
         public KThread nextThread() {
             Lib.assertTrue(Machine.interrupt().disabled());
+
             // implement me
-            return null;
+            ThreadState threadState = pickNextThread();
+            if (threadState != null) { // 다음 thread가 있으면
+                threadState.acquire(this); // 알리고
+                return threadState.thread; // 반환
+            } else
+                return null; // 없으면 null
         }
 
         /**
          * Return the next thread that <tt>nextThread()</tt> would return,
          * without modifying the state of this queue.
          *
-         * @return the next thread that <tt>nextThread()</tt> would
-         * return.
+         * @return the next thread that <tt>nextThread()</tt> would return.
          */
         protected ThreadState pickNextThread() {
-            // implement me
-            return null;
+
+            KThread result = null;
+            int maxPriority = -1;
+            for (KThread thread : waitQueue)
+                if (result == null
+                        || getEffectivePriority(thread) > maxPriority) {
+                    result = thread;
+                    maxPriority = getEffectivePriority(thread);
+                }
+            if (result == null)
+                return null;
+            return getThreadState(result);
         }
 
         public void print() {
             Lib.assertTrue(Machine.interrupt().disabled());
             // implement me (if you want)
+            System.out.print("Priority Queue :");
+            for (KThread thread : waitQueue)
+                System.out.print(" " + thread);
+            System.out.println();
         }
 
         /**
-         * <tt>true</tt> if this queue should transfer priority from waiting
+         * r <tt>true</tt> if this queue should transfer priority from waiting
          * threads to the owning thread.
          */
         public boolean transferPriority;
+
+        // implement
+        LinkedList<KThread> waitQueue = new LinkedList<KThread>();
+        ThreadState lockHolder = null;
     }
 
     /**
      * The scheduling state of a thread. This should include the thread's
-     * priority, its effective priority, any objects it owns, and the queue
-     * it's waiting for, if any.
+     * priority, its effective priority, any objects it owns, and the queue it's
+     * waiting for, if any.
      *
      * @see nachos.threads.KThread#schedulingState
      */
@@ -204,9 +224,38 @@ public class PriorityScheduler extends Scheduler {
          *
          * @return the effective priority of the associated thread.
          */
+
         public int getEffectivePriority() {
-            // implement me
-            return priority;
+            return getEffectivePriority(new HashSet<ThreadState>());
+        }
+
+        private int getEffectivePriority(HashSet<ThreadState> set) {
+            if (set.contains(this)) {
+                return priority;
+            }
+
+            effectivePriority = priority;
+
+            for (PriorityQueue queue : donationQueue)
+                if (queue.transferPriority)
+                    for (KThread thread : queue.waitQueue) {
+                        set.add(this);
+                        int p = getThreadState(thread).getEffectivePriority(set);
+                        set.remove(this);
+                        if (p > effectivePriority)
+                            effectivePriority = p;
+                    }
+
+            PriorityQueue queue = (PriorityQueue) thread.waitForJoin;
+            if (queue.transferPriority)
+                for (KThread thread : queue.waitQueue) {
+                    set.add(this);
+                    int p = getThreadState(thread).getEffectivePriority(set);
+                    set.remove(this);
+                    if (p > effectivePriority)
+                        effectivePriority = p;
+                }
+            return effectivePriority;
         }
 
         /**
@@ -221,21 +270,25 @@ public class PriorityScheduler extends Scheduler {
             this.priority = priority;
 
             // implement me
+            update();
         }
 
         /**
          * Called when <tt>waitForAccess(thread)</tt> (where <tt>thread</tt> is
          * the associated thread) is invoked on the specified priority queue.
-         * The associated thread is therefore waiting for access to the
-         * resource guarded by <tt>waitQueue</tt>. This method is only called
-         * if the associated thread cannot immediately obtain access.
+         * The associated thread is therefore waiting for access to the resource
+         * guarded by <tt>waitQueue</tt>. This method is only called if the
+         * associated thread cannot immediately obtain access.
          *
-         * @param waitQueue the queue that the associated thread is
-         *                  now waiting on.
+         * @param waitQueue the queue that the associated thread is now waiting on.
          * @see nachos.threads.ThreadQueue#waitForAccess
          */
         public void waitForAccess(PriorityQueue waitQueue) {
             // implement me
+            waitQueue.waitQueue.add(thread);
+            if (waitQueue.lockHolder == null)
+                return;
+            waitQueue.lockHolder.update();
         }
 
         /**
@@ -250,15 +303,29 @@ public class PriorityScheduler extends Scheduler {
          */
         public void acquire(PriorityQueue waitQueue) {
             // implement me
+            waitQueue.waitQueue.remove(thread);
+            waitQueue.lockHolder = this;
+            donationQueue.add(waitQueue);
+            update();
+        }
+
+        // implement
+        public void update() {
+            effectivePriority = expiredEffectivePriority;
+            getEffectivePriority();
         }
 
         /**
          * The thread with which this object is associated.
          */
         protected KThread thread;
+
         /**
          * The priority of the associated thread.
          */
-        protected int priority;
+        protected int priority = priorityDefault;
+        protected int effectivePriority = expiredEffectivePriority;
+        protected static final int expiredEffectivePriority = -1;
+        protected LinkedList<PriorityQueue> donationQueue = new LinkedList<PriorityQueue>();
     }
 }
