@@ -55,6 +55,11 @@ public class ThreadedKernel extends Kernel {
 		public void run() {
 			for (int i = 0; i < 3; i++) {
 				System.out.println("*** thread " + which + " looped " + i + " times");
+				
+//				boolean status = Machine.interrupt().disable();
+//				System.out.println("Priority currentThread : " + scheduler.getPriority(KThread.currentThread()));
+//				Machine.interrupt().restore(status);
+				
 				KThread.currentThread().yield();
 			}
 		}
@@ -64,28 +69,17 @@ public class ThreadedKernel extends Kernel {
 
 	/* 기존의 selfTest() 부분은 모두 주석으로 처리하고 PingTest Thread 부분 새롭게 추가 */
 	public void selfTest() {
-		KThread a = new KThread(new PingTest(1)).setName("forked thread");
-		KThread b = new KThread(new PingTest(2)).setName("forked thread");
-
-		// scheduler.increasePriority();
-		// new KThread(new PingTest(1)).setName("forked thread").fork();
-		// scheduler.decreasePriority();
+		KThread thread2 = new KThread(new PingTest(2)).setName("forked thread");
+		KThread thread3 = new KThread(new PingTest(3)).setName("forked thread");
 
 		boolean status = Machine.interrupt().disable();
-		scheduler.setPriority(a, 2);
-		scheduler.setPriority(b, 3);
-
-		System.out.println("Priority a Thread : " + scheduler.getPriority(a));
-		System.out.println("Priority b Thread : " + scheduler.getPriority(b));
-
-		a.ready();
-		b.ready();
-
+		scheduler.setPriority(thread2, 2);
+		scheduler.setPriority(thread3, 3);
+		thread2.fork();
+		thread3.fork();
 		Machine.interrupt().restore(status);
-		// a.fork();
-		// b.fork();
-
-		new PingTest(0).run();
+		
+		new PingTest(1).run();
 
 		// KThread.selfTest();
 		// Semaphore.selfTest();
