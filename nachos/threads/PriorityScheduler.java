@@ -161,7 +161,7 @@ public class PriorityScheduler extends Scheduler {
 	 *		return.
 	 */
 	protected ThreadState pickNextThread() {
-	    // implement me
+		
 		KThread result = null;
 		int maxPriority = -1;
 		
@@ -307,7 +307,7 @@ public class PriorityScheduler extends Scheduler {
 	    this.priority = priority;
 	    
 	    // implement me
-//	    update();
+	    update();
 	}
 
 	/**

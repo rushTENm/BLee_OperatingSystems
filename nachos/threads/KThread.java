@@ -422,7 +422,7 @@ public class KThread {
 		}
 
 		public void run() {
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < 3; i++) {
 				System.out.println("*** thread " + which + " looped " + i + " times");
 				currentThread.yield();
 			}
@@ -436,9 +436,10 @@ public class KThread {
 	 */
 	public static void selfTest() {
 		Lib.debug(dbgThread, "Enter KThread.selfTest");
-
-		new KThread(new PingTest(1)).setName("forked thread").fork();
-		new PingTest(0).run();
+		new KThread(new PingTest(1)).setName("FRK TD").fork();
+		new KThread(new PingTest(2)).setName("SC TD").fork();
+		new KThread(new PingTest(2)).setName("CR TD").fork();
+		new PingTest(0).run();		
 	}
 
 	private static final char dbgThread = 't';
