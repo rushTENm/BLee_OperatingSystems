@@ -161,25 +161,16 @@ public class PriorityScheduler extends Scheduler {
 
 			KThread result = null;
 			int maxPriority = -1;
-			int tmpPriority;
-			for (KThread thread : waitQueue) { // waitQueue 하나씩 검사
-				// 첫번째 이거나, 최우선 순위이면
-				tmpPriority = getPriority(thread);
-				// if (result == null || getEffectivePriority() > maxPriority) {
-				if (result == null || tmpPriority > maxPriority) {
-					// 해당 thread를 임시 저장
+			for (KThread thread : waitQueue)
+				if (result == null
+						|| getEffectivePriority(thread) > maxPriority) {
 					result = thread;
-					// maxPriority = getEffectivePriority();
-					maxPriority = tmpPriority;
+					maxPriority = getEffectivePriority(thread);
 				}
-			}
-			// 다 돌고 나면 최고 우선순위 thread 반환
 			if (result == null)
 				return null;
 			return getThreadState(result);
-
-			// return null;
-		}
+			}
 
 		public void print() {
 			Lib.assertTrue(Machine.interrupt().disabled());
@@ -265,7 +256,7 @@ public class PriorityScheduler extends Scheduler {
 			}
 
 			effectivePriority = priority;
-
+			
 			for (PriorityQueue queue : donationQueue)
 				if (queue.transferPriority)
 					for (KThread thread : queue.waitQueue) {
@@ -285,7 +276,6 @@ public class PriorityScheduler extends Scheduler {
 					if (p > effectivePriority)
 						effectivePriority = p;
 				}
-
 			return effectivePriority;
 		}
 
