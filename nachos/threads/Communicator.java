@@ -19,12 +19,12 @@ public class Communicator {
     /**
      * Wait for a thread to listen through this communicator, and then transfer
      * <i>word</i> to the listener.
-     *
+     * <p>
      * <p>
      * Does not return until this thread is paired up with a listening thread.
      * Exactly one listener should receive <i>word</i>.
      *
-     * @param	word	the integer to transfer.
+     * @param    word    the integer to transfer.
      */
     public void speak(int word) {
     }
@@ -33,9 +33,9 @@ public class Communicator {
      * Wait for a thread to speak through this communicator, and then return
      * the <i>word</i> that thread passed to <tt>speak()</tt>.
      *
-     * @return	the integer transferred.
-     */    
+     * @return the integer transferred.
+     */
     public int listen() {
-	return 0;
+        return 0;
     }
 }
