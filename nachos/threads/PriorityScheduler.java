@@ -2,6 +2,7 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.LinkedList;
 import java.util.TreeSet;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -143,7 +144,11 @@ public class PriorityScheduler extends Scheduler {
         public KThread nextThread() {
             Lib.assertTrue(Machine.interrupt().disabled());
             // implement me
-            return null;
+            ThreadState picked = pickNextThread();
+            if (picked != null)
+                return picked.thread;
+            else
+                return null;
         }
 
         /**
@@ -155,12 +160,28 @@ public class PriorityScheduler extends Scheduler {
          */
         protected ThreadState pickNextThread() {
             // implement me
-            return null;
+            if (waitQueue.isEmpty())
+                return null;
+            else {
+                ThreadState next = getThreadState(waitQueue.peekFirst());
+                int nextPriority = next.getEffectivePriority();
+                for (KThread kthread : waitQueue) {
+                    ThreadState current = getThreadState(kthread);
+                    if (current.getEffectivePriority() > nextPriority) {
+                        next = current;
+                        nextPriority = current.getEffectivePriority();
+                    }
+                }
+                waitQueue.remove(next.thread);
+                return next;
+            }
         }
 
         public void print() {
             Lib.assertTrue(Machine.interrupt().disabled());
             // implement me (if you want)
+            for (Iterator i = waitQueue.iterator(); i.hasNext(); )
+                System.out.print((KThread) i.next() + " ");
         }
 
         /**
@@ -168,6 +189,8 @@ public class PriorityScheduler extends Scheduler {
          * threads to the owning thread.
          */
         public boolean transferPriority;
+        // implement
+        LinkedList<KThread> waitQueue = new LinkedList<>();
     }
 
     /**
@@ -175,7 +198,7 @@ public class PriorityScheduler extends Scheduler {
      * priority, its effective priority, any objects it owns, and the queue
      * it's waiting for, if any.
      *
-     * @see nachos.threads.KThread#schedulingState
+     * @see KThread#schedulingState
      */
     protected class ThreadState {
         /**
@@ -206,7 +229,7 @@ public class PriorityScheduler extends Scheduler {
          */
         public int getEffectivePriority() {
             // implement me
-            return priority;
+            return effectivePriority;
         }
 
         /**
@@ -221,6 +244,7 @@ public class PriorityScheduler extends Scheduler {
             this.priority = priority;
 
             // implement me
+            effectivePriority = priority;
         }
 
         /**
@@ -232,10 +256,11 @@ public class PriorityScheduler extends Scheduler {
          *
          * @param waitQueue the queue that the associated thread is
          *                  now waiting on.
-         * @see nachos.threads.ThreadQueue#waitForAccess
+         * @see ThreadQueue#waitForAccess
          */
         public void waitForAccess(PriorityQueue waitQueue) {
             // implement me
+            waitQueue.waitQueue.add(thread);
         }
 
         /**
@@ -245,11 +270,12 @@ public class PriorityScheduler extends Scheduler {
          * <tt>thread</tt> is the associated thread), or as a result of
          * <tt>nextThread()</tt> being invoked on <tt>waitQueue</tt>.
          *
-         * @see nachos.threads.ThreadQueue#acquire
-         * @see nachos.threads.ThreadQueue#nextThread
+         * @see ThreadQueue#acquire
+         * @see ThreadQueue#nextThread
          */
         public void acquire(PriorityQueue waitQueue) {
             // implement me
+            Lib.assertTrue(waitQueue.waitQueue.isEmpty());
         }
 
         /**
@@ -260,5 +286,6 @@ public class PriorityScheduler extends Scheduler {
          * The priority of the associated thread.
          */
         protected int priority;
+        protected int effectivePriority;
     }
 }
