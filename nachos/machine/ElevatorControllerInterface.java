@@ -15,9 +15,9 @@ public interface ElevatorControllerInterface extends Runnable {
      * after this method returns, but potentially before <tt>run()</tt> is
      * called.
      *
-     * @param    controls    the controller's interface to the elevator
-     * bank. The controller must not attempt to access
-     * the elevator bank in <i>any</i> other way.
+     * @param	controls	the controller's interface to the elevator
+     *				bank. The controller must not attempt to access
+     *				the elevator bank in <i>any</i> other way.
      */
     public void initialize(ElevatorControls controls);
 
@@ -28,21 +28,13 @@ public interface ElevatorControllerInterface extends Runnable {
      */
     public void run();
 
-    /**
-     * The number of ticks doors should be held open before closing them.
-     */
+    /** The number of ticks doors should be held open before closing them. */
     public static final int timeDoorsOpen = 500;
 
-    /**
-     * Indicates an elevator intends to move down.
-     */
+    /** Indicates an elevator intends to move down. */
     public static final int dirDown = -1;
-    /**
-     * Indicates an elevator intends not to move.
-     */
+    /** Indicates an elevator intends not to move. */
     public static final int dirNeither = 0;
-    /**
-     * Indicates an elevator intends to move up.
-     */
+    /** Indicates an elevator intends to move up. */
     public static final int dirUp = 1;
 }

@@ -12,14 +12,14 @@ public class Coff {
      * Allocate a new Coff object.
      */
     protected Coff() {
-        file = null;
-        entryPoint = 0;
-        sections = null;
+	file = null;
+	entryPoint = 0;
+	sections = null;
     }
-
+    
     /**
      * Load the COFF executable in the specified file.
-     * <p>
+     *
      * <p>
      * Notes:
      * <ol>
@@ -34,69 +34,71 @@ public class Coff {
      * instantaneously while handling page faults).
      * </ol>
      *
-     * @param    file    the file containing the executable.
-     * @exception EOFException    if the executable is corrupt.
+     * @param	file	the file containing the executable.
+     * @exception	EOFException	if the executable is corrupt.
      */
     public Coff(OpenFile file) throws EOFException {
-        this.file = file;
+	this.file = file;
+	
+	Coff coff = Machine.autoGrader().createLoader(file);
 
-        Coff coff = Machine.autoGrader().createLoader(file);
+	if (coff != null) {
+	    this.entryPoint = coff.entryPoint;
+	    this.sections = coff.sections;
+	}
+	else {
+	    byte[] headers = new byte[headerLength+aoutHeaderLength];
 
-        if (coff != null) {
-            this.entryPoint = coff.entryPoint;
-            this.sections = coff.sections;
-        } else {
-            byte[] headers = new byte[headerLength + aoutHeaderLength];
+	    if (file.length() < headers.length) {
+		Lib.debug(dbgCoff, "\tfile is not executable");
+		throw new EOFException();
+	    }
 
-            if (file.length() < headers.length) {
-                Lib.debug(dbgCoff, "\tfile is not executable");
-                throw new EOFException();
-            }
+	    Lib.strictReadFile(file, 0, headers, 0, headers.length);
+	    
+	    int magic = Lib.bytesToUnsignedShort(headers, 0);
+	    int numSections = Lib.bytesToUnsignedShort(headers, 2);
+	    int optionalHeaderLength = Lib.bytesToUnsignedShort(headers, 16);
+	    int flags = Lib.bytesToUnsignedShort(headers, 18);
+	    entryPoint = Lib.bytesToInt(headers, headerLength+16);
 
-            Lib.strictReadFile(file, 0, headers, 0, headers.length);
+	    if (magic != 0x0162) {
+		Lib.debug(dbgCoff, "\tincorrect magic number");
+		throw new EOFException();
+	    }
+	    if (numSections < 2 || numSections > 10) {
+		Lib.debug(dbgCoff, "\tbad section count");
+		throw new EOFException();
+	    }
+	    if ((flags & 0x0003) != 0x0003) {
+		Lib.debug(dbgCoff, "\tbad header flags");
+		throw new EOFException();
+	    }
 
-            int magic = Lib.bytesToUnsignedShort(headers, 0);
-            int numSections = Lib.bytesToUnsignedShort(headers, 2);
-            int optionalHeaderLength = Lib.bytesToUnsignedShort(headers, 16);
-            int flags = Lib.bytesToUnsignedShort(headers, 18);
-            entryPoint = Lib.bytesToInt(headers, headerLength + 16);
+	    int offset = headerLength + optionalHeaderLength;
 
-            if (magic != 0x0162) {
-                Lib.debug(dbgCoff, "\tincorrect magic number");
-                throw new EOFException();
-            }
-            if (numSections < 2 || numSections > 10) {
-                Lib.debug(dbgCoff, "\tbad section count");
-                throw new EOFException();
-            }
-            if ((flags & 0x0003) != 0x0003) {
-                Lib.debug(dbgCoff, "\tbad header flags");
-                throw new EOFException();
-            }
-
-            int offset = headerLength + optionalHeaderLength;
-
-            sections = new CoffSection[numSections];
-            for (int s = 0; s < numSections; s++) {
-                int sectionEntryOffset = offset + s * CoffSection.headerLength;
-                try {
-                    sections[s] =
-                            new CoffSection(file, this, sectionEntryOffset);
-                } catch (EOFException e) {
-                    Lib.debug(dbgCoff, "\terror loading section " + s);
-                    throw e;
-                }
-            }
-        }
+	    sections = new CoffSection[numSections];
+	    for (int s=0; s<numSections; s++) {
+		int sectionEntryOffset = offset + s*CoffSection.headerLength;
+		try {
+		    sections[s] =
+			new CoffSection(file, this, sectionEntryOffset);
+		}
+		catch (EOFException e) {
+		    Lib.debug(dbgCoff, "\terror loading section " + s);
+		    throw e;
+		}
+	    }
+	}
     }
 
     /**
      * Return the number of sections in the executable.
      *
-     * @return the number of sections in the executable.
+     * @return	the number of sections in the executable.
      */
     public int getNumSections() {
-        return sections.length;
+	return sections.length;
     }
 
     /**
@@ -104,25 +106,25 @@ public class Coff {
      * section numbers include <tt>0</tt> through <tt>getNumSections() -
      * 1</tt>.
      *
-     * @param    sectionNumber    the section to select.
-     * @return an object that can be used to access the specified section.
+     * @param	sectionNumber	the section to select.
+     * @return	an object that can be used to access the specified section.
      */
     public CoffSection getSection(int sectionNumber) {
-        Lib.assertTrue(sectionNumber >= 0 && sectionNumber < sections.length);
+	Lib.assertTrue(sectionNumber >= 0 && sectionNumber < sections.length);
 
-        return sections[sectionNumber];
+	return sections[sectionNumber];
     }
 
     /**
      * Return the program entry point. This is the value that to which the PC
      * register should be initialized to before running the program.
      *
-     * @return the program entry point.
+     * @return	the program entry point.
      */
     public int getEntryPoint() {
-        Lib.assertTrue(file != null);
-
-        return entryPoint;
+	Lib.assertTrue(file != null);
+	
+	return entryPoint;
     }
 
     /**
@@ -130,20 +132,16 @@ public class Coff {
      * loader.
      */
     public void close() {
-        file.close();
+	file.close();
 
-        sections = null;
+	sections = null;
     }
 
     private OpenFile file;
 
-    /**
-     * The virtual address of the first instruction of the program.
-     */
+    /** The virtual address of the first instruction of the program. */
     protected int entryPoint;
-    /**
-     * The sections in this COFF executable.
-     */
+    /** The sections in this COFF executable. */
     protected CoffSection sections[];
 
     private static final int headerLength = 20;
