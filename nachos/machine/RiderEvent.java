@@ -9,25 +9,39 @@ package nachos.machine;
  */
 public final class RiderEvent {
     public RiderEvent(int event, int floor, int elevator, int direction) {
-	this.event = event;
-	this.floor = floor;
-	this.elevator = elevator;
-	this.direction = direction;
+        this.event = event;
+        this.floor = floor;
+        this.elevator = elevator;
+        this.direction = direction;
     }
-    
-    /** The event identifier. Refer to the <i>event*</i> constants. */
+
+    /**
+     * The event identifier. Refer to the <i>event*</i> constants.
+     */
     public final int event;
-    /** The floor pertaining to the event, or -1 if not applicable. */
+    /**
+     * The floor pertaining to the event, or -1 if not applicable.
+     */
     public final int floor;
-    /** The elevator pertaining to the event, or -1 if not applicable. */
+    /**
+     * The elevator pertaining to the event, or -1 if not applicable.
+     */
     public final int elevator;
-    /** The direction display of the elevator (neither if not applicable). */
-    public final int direction;	
-    
-    /** An elevator's doors have opened. */
+    /**
+     * The direction display of the elevator (neither if not applicable).
+     */
+    public final int direction;
+
+    /**
+     * An elevator's doors have opened.
+     */
     public static final int eventDoorsOpened = 0;
-    /** An elevator's doors were open and its direction display changed. */
+    /**
+     * An elevator's doors were open and its direction display changed.
+     */
     public static final int eventDirectionChanged = 1;
-    /** An elevator's doors have closed. */
+    /**
+     * An elevator's doors have closed.
+     */
     public static final int eventDoorsClosed = 2;
 }
