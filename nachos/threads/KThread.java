@@ -1,5 +1,7 @@
 package nachos.threads;
 
+import java.util.LinkedList;
+
 import nachos.machine.*;
 
 /**
@@ -54,14 +56,13 @@ public class KThread {
      * create an idle thread as well.
      */
     public KThread() {
-        // implement
-        boolean status = Machine.interrupt().disable();
-        waitForJoin.acquire(this);
-        Machine.interrupt().restore(status);
-        //
 
         if (currentThread != null) {
             tcb = new TCB();
+
+            // task
+            joinThread = new LinkedList<>();
+
         } else {
             readyQueue = ThreadedKernel.scheduler.newThreadQueue(false);
             readyQueue.acquire(this);
@@ -295,18 +296,13 @@ public class KThread {
 
         Lib.assertTrue(this != currentThread);
 
-        // implement
+        // task
+        if (this.status == statusFinished)
+            return;
         boolean intStatus = Machine.interrupt().disable();
-
-        // so the current thread will wait for this thread
-        // not need to wait if the thread is already dead
-        if (status != statusFinished) {
-            waitForJoin.waitForAccess(currentThread);
-            KThread.sleep();
-        }
-
+        joinThread.add(currentThread);
+        currentThread.sleep();
         Machine.interrupt().restore(intStatus);
-
     }
 
     /**
@@ -397,6 +393,14 @@ public class KThread {
         status = statusRunning;
 
         if (toBeDestroyed != null) {
+
+            // task
+            while (!toBeDestroyed.joinThread.isEmpty()) {
+                KThread TempThread;
+                TempThread = toBeDestroyed.joinThread.removeFirst();
+                TempThread.ready();
+            }
+
             toBeDestroyed.tcb.destroy();
             toBeDestroyed.tcb = null;
             toBeDestroyed = null;
@@ -418,7 +422,7 @@ public class KThread {
         }
 
         public void run() {
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 5; i++) {
                 System.out.println("*** thread " + which + " looped " + i + " times");
                 currentThread.yield();
             }
@@ -432,7 +436,6 @@ public class KThread {
      */
     public static void selfTest() {
         Lib.debug(dbgThread, "Enter KThread.selfTest");
-        new KThread(new PingTest(1)).setName("FRK TD").fork();
         new PingTest(0).run();
     }
 
@@ -478,4 +481,8 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+
+    // task
+    private static LinkedList<KThread> joinThread = null;
+
 }

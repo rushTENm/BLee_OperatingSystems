@@ -46,6 +46,7 @@ public class ThreadedKernel extends Kernel {
      * here.
      */
     /* PingTest 클래스는 새롭게 추가한 내용임 */
+
     private static class PingTest implements Runnable {
         PingTest(int which) {
             this.which = which;
@@ -61,23 +62,52 @@ public class ThreadedKernel extends Kernel {
         private int which;
     }
 
-    public void selfTest() {
-        KThread thread2 = new KThread(new PingTest(2)).setName("forked 1");
-        KThread thread3 = new KThread(new PingTest(3)).setName("forked 2");
-        KThread thread4 = new KThread(new PingTest(4)).setName("forked 3");
+    private static class Communicator_test implements Runnable {
+        Communicator_test(Condition2 condi, Condition2 condi2, Lock lock, int id) {
+            human = new Communicator();
+            which = id;
+        }
 
-        boolean status = Machine.interrupt().disable();
-        scheduler.setPriority(thread2, 2);
-        scheduler.setPriority(thread3, 3);
-        scheduler.setPriority(thread4, 2);
-        thread4.fork();
-        thread3.fork();
-        thread2.fork();
-        Machine.interrupt().restore(status);
+        public void run() {
+            for (int i = 0; i < 3; i++) {
+                // 짝수 speak, 홀수 listen
+                if (which % 2 == 0)
+                    human.speak(which);
+                else
+                    human.listen();
+            }
+        }
 
-        new PingTest(1).run();
+        private int which;
+        private Communicator human = null;
     }
 
+    /* 기존의 selfTest() 부분은 모두 주석으로 처리하고 PingTest Thread 부분 새롭게 추가 */
+    public void selfTest() {
+
+        mutex = new Lock();
+        speakCon = new Condition2(mutex);
+        listenCon = new Condition2(mutex);
+
+        KThread communicator1, communicator2, communicator3, communicator4;
+        communicator1 = new KThread(new Communicator_test(speakCon, listenCon, mutex, 0));
+        communicator2 = new KThread(new Communicator_test(speakCon, listenCon, mutex, 1));
+        communicator3 = new KThread(new Communicator_test(speakCon, listenCon, mutex, 2));
+        communicator4 = new KThread(new Communicator_test(speakCon, listenCon, mutex, 3));
+        communicator1.fork();
+        communicator2.fork();
+        communicator3.fork();
+        communicator4.fork();
+        communicator1.join();
+        communicator2.join();
+        communicator3.join();
+        communicator4.join();
+    }
+
+    public static Condition2 speakCon = null;
+    public static Condition2 listenCon = null;
+    public static Lock mutex = null;
+    public static int communicator_id = 0;
 
     /**
      * A threaded kernel does not run user programs, so this method does
