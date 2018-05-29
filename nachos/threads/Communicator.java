@@ -24,7 +24,7 @@ public class Communicator {
      * Does not return until this thread is paired up with a listening thread.
      * Exactly one listener should receive <i>word</i>.
      *
-     * @param    word    the integer to transfer.
+     * @param word the integer to transfer.
      */
     public void speak(int word) {
     }

@@ -9,16 +9,16 @@ import nachos.machine.*;
  * <p>
  * You must implement this.
  *
- * @see    nachos.threads.Condition
+ * @see nachos.threads.Condition
  */
 public class Condition2 {
     /**
      * Allocate a new condition variable.
      *
-     * @param    conditionLock    the lock associated with this condition
-     * variable. The current thread must hold this
-     * lock whenever it uses <tt>sleep()</tt>,
-     * <tt>wake()</tt>, or <tt>wakeAll()</tt>.
+     * @param conditionLock the lock associated with this condition
+     *                      variable. The current thread must hold this
+     *                      lock whenever it uses <tt>sleep()</tt>,
+     *                      <tt>wake()</tt>, or <tt>wakeAll()</tt>.
      */
     public Condition2(Lock conditionLock) {
         this.conditionLock = conditionLock;
